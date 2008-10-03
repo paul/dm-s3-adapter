@@ -1,3 +1,5 @@
+require 'libxml'
+
 require 'dm-serializer'
 require 'pp'
 
@@ -17,6 +19,7 @@ module DataMapper
         @http = Resourceful::HttpAccessor.new(:cache_manager => Resourceful::InMemoryCacheManager.new,
                                               :logger => Resourceful::StdOutLogger.new)
         @http.auth_manager.add_auth_handler(AwsAuthenticator.new(@aws_access_key, @aws_secret_key, @aws_bucket))
+        @resources = {}
 
         create_bucket unless bucket_exists?
       end
@@ -27,11 +30,29 @@ module DataMapper
           model      = resource.model
           attributes = resource.dirty_attributes
 
-          identity_field = model.key(repository.name).detect { |p| p.serial? }
+          identity_field = model.key(repository.name).detect { |p| p.key? }
 
-          pp repository, model, attributes, identity_field
+          path = "#{model.to_s.pluralize}/#{attributes[identity_field]}"
 
+          @resources[path] ||= @http.resource(@aws_uri + path)
+
+          puts resource.to_json
+
+          resp = @resources[path].put(resource.to_json, 
+                                      :content_type => 'application/json')
+
+          pp resp
         end
+      end
+
+      def read_one(query)
+        pp query
+
+      end
+
+      def list_buckets 
+        resp = @http.resource('http://s3.amazonaws.com/').get
+        doc = LibXML::XML::Parser.string(resp.body).parse
       end
 
       def bucket_exists?
@@ -42,22 +63,13 @@ module DataMapper
           if e.http_response.code == 404
             return false
           else
-            pp e.http_request.header
-            pp e.http_response
             raise e
           end
         end
       end
 
       def create_bucket
-        begin 
-        resp = @http.resource(@aws_uri).put("", :content_type => 'application/xml',
-                                                :date => Time.now.httpdate)
-        rescue Resourceful::UnsuccessfulHttpRequestError => e
-          pp e.http_request.header
-          pp e.http_response
-          raise e
-        end
+        resp = @http.resource(@aws_uri).put("", :content_type => 'application/xml')
       end
 
     end
