@@ -2,14 +2,15 @@ require 'md5'
 require 'base64'
 class AwsAuthenticator
 
-  def initialize(access_key, secret_key, bucket)
-    @access_key, @secret_key, @bucket = access_key, secret_key, bucket
+  def initialize(access_key, secret_key)
+    @access_key, @secret_key = access_key, secret_key
   end
 
   def valid_for?(challenge_response)
     #probably not, because AWS never offers challenges
   end
 
+  # TODO: Figure out what circumstances make this an AWS Request
   def can_handle?(request)
     true
   end
