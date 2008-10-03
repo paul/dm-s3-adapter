@@ -18,7 +18,7 @@ module DataMapper
 
         @http = Resourceful::HttpAccessor.new(:cache_manager => Resourceful::InMemoryCacheManager.new,
                                               :logger => Resourceful::StdOutLogger.new)
-        @http.auth_manager.add_auth_handler(AwsAuthenticator.new(@aws_access_key, @aws_secret_key, @aws_bucket))
+        @http.auth_manager.add_auth_handler(AwsAuthenticator.new(@aws_access_key, @aws_secret_key))
         @resources = {}
 
         create_bucket unless bucket_exists?
@@ -47,7 +47,19 @@ module DataMapper
 
       def read_one(query)
         pp query
+        repository = query.repository
+        model      = query.model
+        identity_field = model.key(repository.name).detect { |p| p.key? }
 
+        path = path(model, query.conditions[0][2])
+        @resources[path] ||= @http.resource(@aws_uri + path)
+        resp = @resources[path].get(:accept => 'application/json')
+
+        pp resp
+      end
+
+      def path(model, key)
+        "#{model.to_s.pluralize}/#{key}"
       end
 
       def list_buckets 
