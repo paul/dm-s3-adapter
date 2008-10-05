@@ -3,11 +3,11 @@ require 'libxml'
 require 'dm-serializer'
 require 'pp'
 
-require File.dirname(__FILE__) + "/dm-simpledb-adapter/aws_authenticator"
+require File.dirname(__FILE__) + "/dm-s3-adapter/aws_authenticator"
 
 module DataMapper
   module Adapters
-    class SimpledbAdapter < AbstractAdapter
+    class S3Adapter < AbstractAdapter
       def initialize(name, uri_or_options)
         super
 
